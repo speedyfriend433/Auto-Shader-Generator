@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto Shader Generator</title>
+    <title>Shader Converter</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,13 +11,14 @@
             background-color: #2B2B2B;
             color: #ffffff;
         }
-        #dropzone {
-            border: 2px dashed #ffffff;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
             background-color: #444;
+            color: #ffffff;
         }
         textarea {
             width: 100%;
@@ -45,89 +46,78 @@
 </head>
 <body>
 
-<h1>Auto Shader Generator</h1>
-<div id="dropzone">Drag and drop the file here</div>
-<textarea id="linkInput" placeholder="Paste the shader code here..."></textarea>
+<h1>Shader Converter</h1>
+<input type="text" id="linkInput" placeholder="Paste the shader link....">
+<button id="fetchButton">Get the code</button>
+<textarea id="outputArea" placeholder="Converted shader code is displayed here...." readonly></textarea>
 <button id="downloadbtn">Generate Shader</button>
 
 <script>
-    function setup() {
-        const dropzone = document.getElementById('dropzone');
-        dropzone.addEventListener('dragover', highlight);
-        dropzone.addEventListener('dragleave', unHighlight);
-        dropzone.addEventListener('drop', gotFile);
-
-        const input = document.getElementById("linkInput");
-        const downloadbtn = document.getElementById("downloadbtn");
-
-        downloadbtn.addEventListener("click", function() {
-            let rawText = process(input.value.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, ''));
-            let blob = new Blob([rawText], { type: 'text/plain' });
-            let filename = "menu-shader.fsh";
-            downloadFile(blob, filename);
-        });
-
-        function highlight(e) {
-            e.preventDefault();
-            dropzone.style.backgroundColor = '#cee5d0';
+    document.getElementById('fetchButton').addEventListener('click', function() {
+        const link = document.getElementById('linkInput').value;
+        const shaderId = link.split('/')[4];
+        if (!shaderId) {
+            alert("Please enter a valid shader link.");
+            return;
         }
 
-        function unHighlight() {
-            dropzone.style.backgroundColor = '#444';
-        }
+        fetch(`https://www.shadertoy.com/api/shaders/${shaderId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.shader) {
+                    const shaderCode = data.shader.code;
+                    const processedCode = process(shaderCode);
+                    document.getElementById('outputArea').value = processedCode;
+                } else {
+                    alert("I can't find the shader.");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("An error occurred. Please try again.");
+            });
+    });
 
-        function gotFile(e) {
-            e.preventDefault();
-            unHighlight();
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    input.value = process(event.target.result);
-                };
-                reader.readAsText(file);
-            }
-        }
+    document.getElementById('downloadbtn').addEventListener('click', function() {
+        const rawText = document.getElementById('outputArea').value;
+        const blob = new Blob([rawText], { type: 'text/plain' });
+        const filename = "menu-shader.fsh";
+        downloadFile(blob, filename);
+    });
 
-        function process(rawText) {
-            rawText = rawText.replace(/iResolution/g, "resolution")
-                             .replace(/iTime/g, "time")
-                             .replace(/iMouse/g, "mouse")
-                             .replace(/fragCoord/g, "gl_FragCoord")
-                             .replace(/fragColor/g, "gl_FragColor");
+    function process(rawText) {
+        let processedText = rawText.replace(/iResolution/g, "resolution")
+                                   .replace(/iTime/g, "time")
+                                   .replace(/iMouse/g, "mouse")
+                                   .replace(/fragCoord/g, "gl_FragCoord")
+                                   .replace(/fragColor/g, "gl_FragColor")
+                                   .replace(/void mainImage/g, "void main");
 
-            if (rawText.includes("void mainImage")) {
-                let cutString = rawText.substring(rawText.indexOf("void mainImage"));
-                cutString = cutString.substring(0, cutString.indexOf("{"));
-                rawText = rawText.replace(cutString, "void main()");
-            }
+        processedText = "uniform vec2 center; \n" +
+                        "uniform vec2 resolution;\n" +
+                        "uniform float time;\n" +
+                        "uniform vec2 mouse; \n" +
+                        "uniform float pulse1;\n" +
+                        "uniform float pulse2;\n" +
+                        "uniform float pulse3; \n\n\n" + processedText;
 
-            return "uniform vec2 center; \n" +
-                   "uniform vec2 resolution;\n" +
-                   "uniform float time;\n" +
-                   "uniform vec2 mouse; \n" +
-                   "uniform float pulse1;\n" +
-                   "uniform float pulse2;\n" +
-                   "uniform float pulse3; \n\n\n" + rawText;
-        }
-
-        function downloadFile(file, fileName) {
-            const link = document.createElement("a");
-            link.style.display = "none";
-            link.href = URL.createObjectURL(file);
-            link.download = fileName;
-
-            document.body.appendChild(link);
-            link.click();
-
-            setTimeout(() => {
-                URL.revokeObjectURL(link.href);
-                link.parentNode.removeChild(link);
-            }, 0);
-        }
+        return processedText;
     }
 
-    setup();
+    function downloadFile(file, fileName) {
+        const link = document.createElement("a");
+        link.style.display = "none";
+        link.href = URL.createObjectURL(file);
+        link.download = fileName;
+
+        document.body.appendChild(link);
+        link.click();
+
+        setTimeout(() => {
+            URL.revokeObjectURL(link.href);
+            link.parentNode.removeChild(link);
+        }, 0);
+    }
 </script>
 
 </body>
