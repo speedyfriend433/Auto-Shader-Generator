@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Shader Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Shader File Generator</h1>
+<textarea id="shaderCode" placeholder="Paste the shader code here..."></textarea>
+<button id="generateButton">Generate File</button>
+
+<script>
+    document.getElementById('generateButton').onclick = function() {
+        const shaderCode = document.getElementById('shaderCode').value;
+        const blob = new Blob([shaderCode], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'menu-shader.fsh';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+</script>
+
+</body>
+</html>
