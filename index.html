@@ -8,38 +8,126 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            background-color: #2B2B2B;
+            color: #ffffff;
+        }
+        #dropzone {
+            border: 2px dashed #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: #444;
         }
         textarea {
             width: 100%;
             height: 300px;
             margin-bottom: 10px;
+            background-color: #222;
+            color: #ffffff;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
         }
         button {
             padding: 10px 15px;
             font-size: 16px;
+            background-color: #007BFF;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
 
-<h1>Shader File Generator</h1>
-<textarea id="shaderCode" placeholder="Paste the shader code here..."></textarea>
-<button id="generateButton">Generate File</button>
+<h1>Auto Shader Generator</h1>
+<div id="dropzone">Drag and drop the file here</div>
+<textarea id="linkInput" placeholder="Paste the shader code here..."></textarea>
+<button id="downloadbtn">Generate Shader</button>
 
 <script>
-    document.getElementById('generateButton').onclick = function() {
-        const shaderCode = document.getElementById('shaderCode').value;
-        const blob = new Blob([shaderCode], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'menu-shader.fsh';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    };
+    function setup() {
+        const dropzone = document.getElementById('dropzone');
+        dropzone.addEventListener('dragover', highlight);
+        dropzone.addEventListener('dragleave', unHighlight);
+        dropzone.addEventListener('drop', gotFile);
+
+        const input = document.getElementById("linkInput");
+        const downloadbtn = document.getElementById("downloadbtn");
+
+        downloadbtn.addEventListener("click", function() {
+            let rawText = process(input.value.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, ''));
+            let blob = new Blob([rawText], { type: 'text/plain' });
+            let filename = "menu-shader.fsh";
+            downloadFile(blob, filename);
+        });
+
+        function highlight(e) {
+            e.preventDefault();
+            dropzone.style.backgroundColor = '#cee5d0';
+        }
+
+        function unHighlight() {
+            dropzone.style.backgroundColor = '#444';
+        }
+
+        function gotFile(e) {
+            e.preventDefault();
+            unHighlight();
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    input.value = process(event.target.result);
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function process(rawText) {
+            rawText = rawText.replace(/iResolution/g, "resolution")
+                             .replace(/iTime/g, "time")
+                             .replace(/iMouse/g, "mouse")
+                             .replace(/fragCoord/g, "gl_FragCoord")
+                             .replace(/fragColor/g, "gl_FragColor");
+
+            if (rawText.includes("void mainImage")) {
+                let cutString = rawText.substring(rawText.indexOf("void mainImage"));
+                cutString = cutString.substring(0, cutString.indexOf("{"));
+                rawText = rawText.replace(cutString, "void main()");
+            }
+
+            return "uniform vec2 center; \n" +
+                   "uniform vec2 resolution;\n" +
+                   "uniform float time;\n" +
+                   "uniform vec2 mouse; \n" +
+                   "uniform float pulse1;\n" +
+                   "uniform float pulse2;\n" +
+                   "uniform float pulse3; \n\n\n" + rawText;
+        }
+
+        function downloadFile(file, fileName) {
+            const link = document.createElement("a");
+            link.style.display = "none";
+            link.href = URL.createObjectURL(file);
+            link.download = fileName;
+
+            document.body.appendChild(link);
+            link.click();
+
+            setTimeout(() => {
+                URL.revokeObjectURL(link.href);
+                link.parentNode.removeChild(link);
+            }, 0);
+        }
+    }
+
+    setup();
 </script>
 
 </body>
