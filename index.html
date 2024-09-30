@@ -111,12 +111,12 @@
     }
 
     function process(rawText) {
-        let processedText = rawText.replace(/iResolution/g, "resolution")
-                                   .replace(/iTime/g, "time")
-                                   .replace(/iMouse/g, "mouse")
-                                   .replace(/fragCoord/g, "gl_FragCoord")
-                                   .replace(/fragColor/g, "gl_FragColor")
-                                   .replace(/void mainImage/g, "void main");
+        let processedText = rawText.replaceALL(/iResolution/g, "resolution")
+                                   .replaceALL(/iTime/g, "time")
+                                   .replaceALL(/iMouse/g, "mouse")
+                                   .replaceALL(/fragCoord/g, "gl_FragCoord")
+                                   .replaceALL(/fragColor/g, "gl_FragColor")
+                                   .replaceALL(/void mainImage/g, "void main");
 
         processedText = "uniform vec2 center; \n" +
                         "uniform vec2 resolution;\n" +
