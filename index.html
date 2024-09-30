@@ -64,7 +64,7 @@
     document.getElementById('downloadbtn').addEventListener('click', function() {
         const rawText = document.getElementById('outputArea').value;
         if (!rawText) {
-            alert("There is no converted shader code to download..");
+            alert("There is no converted shader code to download.");
             return;
         }
         const blob = new Blob([rawText], { type: 'text/plain' });
@@ -79,44 +79,48 @@
     }
 
     function fetchShaderCode(shaderId) {
-        /*
-        if (API_KEY === 'Bt8lhM') {
-            alert("You need to set the ShaderToy API key..");
+        if (!API_KEY || API_KEY === '0') { 
+            alert("You need to set a valid ShaderToy API key.");
             return;
         }
-        */
 
         const apiUrl = `https://www.shadertoy.com/api/v1/shaders/${shaderId}?key=${API_KEY}`;
 
         fetch(apiUrl)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error("Can't find the shader.");
+                    throw new Error("Can't find the shader. Please check the shader ID or your API key.");
                 }
                 return response.json();
             })
             .then(data => {
-                if (data && data.Shader && data.Shader.renderpass && data.Shader.renderpass[0] && data.Shader.renderpass[0].code) {
+                console.log("API Response:", data);
+
+                if (data && data.Shader && data.Shader.Code) {
+                    const shaderCode = data.Shader.Code;
+                    const processedCode = process(shaderCode);
+                    document.getElementById('outputArea').value = processedCode;
+                } else if (data && data.Shader && data.Shader.renderpass && data.Shader.renderpass[0] && data.Shader.renderpass[0].code) {
                     const shaderCode = data.Shader.renderpass[0].code;
                     const processedCode = process(shaderCode);
                     document.getElementById('outputArea').value = processedCode;
                 } else {
-                    alert("Can't find the shader.");
+                    alert("Can't find the shader code in the API response.");
                 }
             })
             .catch(err => {
-                console.error(err);
-                alert("An error occurred.: " + err.message);
+                console.error("Fetch Error:", err);
+                alert("An error occurred: " + err.message);
             });
     }
 
     function process(rawText) {
-        let processedText = rawText.replaceALL(/iResolution/g, "resolution")
-                                   .replaceALL(/iTime/g, "time")
-                                   .replaceALL(/iMouse/g, "mouse")
-                                   .replaceALL(/fragCoord/g, "gl_FragCoord")
-                                   .replaceALL(/fragColor/g, "gl_FragColor")
-                                   .replaceALL(/void mainImage/g, "void main");
+        let processedText = rawText.replace(/iResolution/g, "resolution")
+                                   .replace(/iTime/g, "time")
+                                   .replace(/iMouse/g, "mouse")
+                                   .replace(/fragCoord/g, "gl_FragCoord")
+                                   .replace(/fragColor/g, "gl_FragColor")
+                                   .replace(/void mainImage/g, "void main");
 
         processedText = "uniform vec2 center; \n" +
                         "uniform vec2 resolution;\n" +
