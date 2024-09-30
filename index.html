@@ -11,7 +11,7 @@
             background-color: #2B2B2B;
             color: #ffffff;
         }
-        input {
+        input, textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
@@ -21,14 +21,8 @@
             color: #ffffff;
         }
         textarea {
-            width: 100%;
             height: 300px;
-            margin-bottom: 10px;
             background-color: #222;
-            color: #ffffff;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
         }
         button {
             padding: 10px 15px;
@@ -47,22 +41,52 @@
 <body>
 
 <h1>Shader Converter</h1>
-<input type="text" id="linkInput" placeholder="Paste the shader link...">
+<input type="text" id="linkInput" placeholder="Paste the shader link... Example: https://www.shadertoy.com/view/mtyGWy">
 <button id="fetchButton">Get Code</button>
-<textarea id="outputArea" placeholder=Converted shader code is displayed here..." readonly></textarea>
+<textarea id="outputArea" placeholder="Converted shader code is displayed here..." readonly></textarea>
 <button id="downloadbtn">Generate Shader</button>
 
 <script>
+    const API_KEY = 'Bt8lhM';
+
     document.getElementById('fetchButton').addEventListener('click', function() {
-        const link = document.getElementById('linkInput').value;
-        const shaderId = link.split('/').pop();
+        const link = document.getElementById('linkInput').value.trim();
+        const shaderId = extractShaderId(link);
 
         if (!shaderId) {
-            alert("Please enter a valid shader link.");
+            alert("Please enter a valid shader link. Example: https://www.shadertoy.com/view/mtyGWy");
             return;
         }
 
-        fetch(`https://www.shadertoy.com/api/shaders/${shaderId}`)
+        fetchShaderCode(shaderId);
+    });
+
+    document.getElementById('downloadbtn').addEventListener('click', function() {
+        const rawText = document.getElementById('outputArea').value;
+        if (!rawText) {
+            alert("There is no converted shader code to download..");
+            return;
+        }
+        const blob = new Blob([rawText], { type: 'text/plain' });
+        const filename = "menu-shader.fsh";
+        downloadFile(blob, filename);
+    });
+
+    function extractShaderId(url) {
+        const regex = /https?:\/\/www\.shadertoy\.com\/view\/([a-zA-Z0-9]+)/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
+    }
+
+    function fetchShaderCode(shaderId) {
+        if (API_KEY === 'Bt8lhM') {
+            alert("You need to set the ShaderToy API key..");
+            return;
+        }
+
+        const apiUrl = `https://www.shadertoy.com/api/v1/shaders/${shaderId}?key=${API_KEY}`;
+
+        fetch(apiUrl)
             .then(response => {
                 if (!response.ok) {
                     throw new Error("Can't find the shader.");
@@ -70,8 +94,8 @@
                 return response.json();
             })
             .then(data => {
-                if (data && data.shader) {
-                    const shaderCode = data.shader.code;
+                if (data && data.Shader && data.Shader.Code) {
+                    const shaderCode = data.Shader.Code;
                     const processedCode = process(shaderCode);
                     document.getElementById('outputArea').value = processedCode;
                 } else {
@@ -82,14 +106,7 @@
                 console.error(err);
                 alert("An error occurred.: " + err.message);
             });
-    });
-
-    document.getElementById('downloadbtn').addEventListener('click', function() {
-        const rawText = document.getElementById('outputArea').value;
-        const blob = new Blob([rawText], { type: 'text/plain' });
-        const filename = "menu-shader.fsh";
-        downloadFile(blob, filename);
-    });
+    }
 
     function process(rawText) {
         let processedText = rawText.replace(/iResolution/g, "resolution")
