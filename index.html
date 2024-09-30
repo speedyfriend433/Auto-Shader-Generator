@@ -47,34 +47,40 @@
 <body>
 
 <h1>Shader Converter</h1>
-<input type="text" id="linkInput" placeholder="Paste the shader link....">
-<button id="fetchButton">Get the code</button>
-<textarea id="outputArea" placeholder="Converted shader code is displayed here...." readonly></textarea>
+<input type="text" id="linkInput" placeholder="Paste the shader link...">
+<button id="fetchButton">Get Code</button>
+<textarea id="outputArea" placeholder=Converted shader code is displayed here..." readonly></textarea>
 <button id="downloadbtn">Generate Shader</button>
 
 <script>
     document.getElementById('fetchButton').addEventListener('click', function() {
         const link = document.getElementById('linkInput').value;
-        const shaderId = link.split('/')[4];
+        const shaderId = link.split('/').pop();
+
         if (!shaderId) {
             alert("Please enter a valid shader link.");
             return;
         }
 
         fetch(`https://www.shadertoy.com/api/shaders/${shaderId}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Can't find the shader.");
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data && data.shader) {
                     const shaderCode = data.shader.code;
                     const processedCode = process(shaderCode);
                     document.getElementById('outputArea').value = processedCode;
                 } else {
-                    alert("I can't find the shader.");
+                    alert("Can't find the shader.");
                 }
             })
             .catch(err => {
                 console.error(err);
-                alert("An error occurred. Please try again.");
+                alert("An error occurred.: " + err.message);
             });
     });
 
