@@ -34,8 +34,8 @@ Before using Shader Converter, ensure you have the following:
 Clone this repository to your local machine:
 
 ```bash
-git clone https://github.com/yourusername/shader-converter.git
-cd shader-converter
+git clone https://github.com/speedyfriend433/auto-shader-converter.git
+cd auto-shader-converter
 ```
 
 ### 2. Install Dependencies
