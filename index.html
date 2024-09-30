@@ -96,8 +96,8 @@
                 return response.json();
             })
             .then(data => {
-                if (data && data.Shader && data.Shader.Code) {
-                    const shaderCode = data.Shader.Code;
+                if (data && data.Shader && data.Shader.renderpass && data.Shader.renderpass[0] && data.Shader.renderpass[0].Code) {
+                    const shaderCode = data.Shader.renderpass[0].Code;
                     const processedCode = process(shaderCode);
                     document.getElementById('outputArea').value = processedCode;
                 } else {
